@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <vector>
 
 struct Config {
   // [config]
@@ -19,7 +20,7 @@ struct Config {
   std::string build_dir;
 
   // [dependencies]
-  std::string dependencies;
+  std::vector<std::string> dependencies;
 
   // [linting]
   std::string linter;

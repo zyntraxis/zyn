@@ -22,8 +22,7 @@ void init_debug() {
       << "version=1.0.0\n"
       << "project=" << project << "\nlanguage=" << lang
       << "\nstandard=" << standard << "\nbuild_type=debug"
-      << "\ncompiler=" << compiler << "\nwarnings=all" << "\noptimization=low"
-      << "\nc_cache=on"
+      << "\ncompiler=" << compiler
       << "\n\n[directories]\nsources=src\ninclude=include\nbuild=build\n\n["
          "dependencies]\n\n[linting]\nlinter=clang-tidy\nconfig_file=.clang-"
          "tidy\nenable_checks=all\ntreat_warnings_as_errors=true\n\n[analysis]"
