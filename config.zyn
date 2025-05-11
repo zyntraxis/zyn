@@ -2,7 +2,7 @@
 version=1.0.2
 project=zyn
 language=cpp
-standard=17
+standard=20
 build_type=release
 compiler=clang++
 warnings=none

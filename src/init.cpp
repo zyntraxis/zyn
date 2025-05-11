@@ -1,129 +1,94 @@
 #include "../include/init.hpp"
 #include <filesystem>
 #include <fstream>
+#include <future>
 #include <iostream>
+#include <mutex>
 
 namespace init {
-void init_debug() {
-  auto project = std::filesystem::current_path().filename().string();
-  std::string lang, standard, compiler;
+namespace fs = std::filesystem;
 
-  std::cout << "Language (c/cpp) -> ";
-  std::getline(std::cin, lang);
+std::mutex io_mutex;
 
-  std::cout << "Standard -> ";
-  std::getline(std::cin, standard);
+std::string get_input(const std::string &prompt) {
+  std::string input;
+  {
+    std::lock_guard<std::mutex> lock(io_mutex);
+    std::cout << prompt;
+    std::getline(std::cin, input);
+  }
+  return input;
+}
 
-  std::cout << "Compiler (clang++/clang) -> ";
-  std::getline(std::cin, compiler);
+void write_config_file(const std::string &project, const std::string &lang,
+                       const std::string &standard, const std::string &compiler,
+                       const std::string &build_type,
+                       const std::string &extra = "") {
+  std::ofstream config("config.zyn");
+  config << "[config]\n"
+         << "version=1.0.0\n"
+         << "project=" << project << "\nlanguage=" << lang
+         << "\nstandard=" << standard << "\nbuild_type=" << build_type
+         << "\ncompiler=" << compiler;
+  if (!extra.empty())
+    config << extra;
 
-  std::ofstream("config.zyn")
-      << "[config]\n"
-      << "version=1.0.0\n"
-      << "project=" << project << "\nlanguage=" << lang
-      << "\nstandard=" << standard << "\nbuild_type=debug"
-      << "\ncompiler=" << compiler
-      << "\n\n[directories]\nsources=src\ninclude=include\nbuild=build\n\n["
-         "dependencies]\n\n[linting]\nlinter=clang-tidy\nconfig_file=.clang-"
-         "tidy\nenable_checks=all\ntreat_warnings_as_errors=true\n\n[analysis]"
-         "\nstatic_analyzer=cppcheck\ncppcheck_enable=all\ncppcheck_"
-         "inconclusive=true\ncppcheck_force=true\n\n[profiling]\ntool=valgrind";
+  config << "\n\n[directories]\nsources=src\ninclude=include\nbuild=build\n\n["
+            "dependencies]";
+}
 
-  std::filesystem::path src_dir = "src";
-  std::filesystem::create_directory(src_dir);
-
-  std::filesystem::path include_dir = "include";
-  std::filesystem::create_directory(include_dir);
-
+void create_main_file(const std::string &lang) {
+  fs::create_directory("src");
   if (lang == "c") {
     std::ofstream("src/main.c")
-        << "#include <stdio.h>\n\nint main() {\n\tprintf("
-           "\"Let's start :)\");\n\treturn 0;\n}";
+        << "#include <stdio.h>\n\nint main() {\n\tprintf(\"Let's start "
+           ":)\");\n\treturn 0;\n}";
   } else if (lang == "cpp") {
     std::ofstream("src/main.cpp")
-        << "#include <iostream>\n\nint main() {\n\tstd::cout << "
-           "\"Let's start :)\" << std::endl;\n\treturn 0;\n}";
+        << "#include <iostream>\n\nint main() {\n\tstd::cout << \"Let's start "
+           ":)\" << std::endl;\n\treturn 0;\n}";
   }
+}
+
+void async_init(const std::string &build_type, const std::string &extra = "") {
+  auto project = fs::current_path().filename().string();
+  std::string lang = get_input("Language (c/cpp) -> ");
+  std::string standard = get_input("Standard -> ");
+  std::string compiler = get_input("Compiler (clang++/clang) -> ");
+
+  auto config_task = std::async(std::launch::async, write_config_file, project,
+                                lang, standard, compiler, build_type, extra);
+
+  auto create_dirs = std::async(std::launch::async, []() {
+    fs::create_directory("src");
+    fs::create_directory("include");
+  });
+
+  auto main_file = std::async(std::launch::async, create_main_file, lang);
+
+  config_task.get();
+  create_dirs.get();
+  main_file.get();
+}
+
+void init_debug() {
+  std::string extra =
+      "\n\n[linting]\nlinter=clang-tidy\nconfig_file=.clang-tidy\nenable_"
+      "checks=all\ntreat_warnings_as_errors=true"
+      "\n\n[analysis]\nstatic_analyzer=cppcheck\ncppcheck_enable=all\ncppcheck_"
+      "inconclusive=true\ncppcheck_force=true"
+      "\n\n[profiling]\ntool=valgrind";
+  async_init("debug", extra);
 }
 
 void init_release() {
-  auto project = std::filesystem::current_path().filename().string();
-  std::string lang, standard, compiler;
-
-  std::cout << "Language (c/cpp) -> ";
-  std::getline(std::cin, lang);
-
-  std::cout << "Standard -> ";
-  std::getline(std::cin, standard);
-
-  std::cout << "Compiler (clang++/clang) -> ";
-  std::getline(std::cin, compiler);
-
-  std::ofstream("config.zyn")
-      << "[config]\n"
-      << "version=1.0.0\n"
-      << "project=" << project << "\nlanguage=" << lang
-      << "\nstandard=" << standard << "\nbuild_type=release"
-      << "\ncompiler=" << compiler << "\nwarnings=none" << "\noptimization=max"
-      << "\nc_cache=on"
-      << "\n\n[directories]\nsources=src\ninclude=include\nbuild=build\n\n["
-         "dependencies]";
-
-  std::filesystem::path src_dir = "src";
-  std::filesystem::create_directory(src_dir);
-
-  std::filesystem::path include_dir = "include";
-  std::filesystem::create_directory(include_dir);
-
-  if (lang == "c") {
-    std::ofstream("src/main.c")
-        << "#include <stdio.h>\n\nint main() {\n\tprintf("
-           "\"Let's start :)\");\n\treturn 0;\n}";
-  } else if (lang == "cpp") {
-    std::ofstream("src/main.cpp")
-        << "#include <iostream>\n\nint main() {\n\tstd::cout << "
-           "\"Let's start :)\" << std::endl;\n\treturn 0;\n}";
-  }
+  std::string extra = "\nwarnings=none\noptimization=max\nc_cache=on";
+  async_init("release", extra);
 }
 
 void init_test() {
-  auto project = std::filesystem::current_path().filename().string();
-  std::string lang, standard, compiler;
-
-  std::cout << "Language (c/cpp) -> ";
-  std::getline(std::cin, lang);
-
-  std::cout << "Standard -> ";
-  std::getline(std::cin, standard);
-
-  std::cout << "Compiler (clang++/clang) -> ";
-  std::getline(std::cin, compiler);
-
-  std::ofstream("config.zyn")
-      << "[config]\n"
-      << "version=1.0.0\n"
-      << "project=" << project << "\nlanguage=" << lang
-      << "\nstandard=" << standard << "\nbuild_type=test"
-      << "\ncompiler=" << compiler << "\nwarnings=all"
-      << "\noptimization=balanced"
-      << "\nc_cache=on"
-      << "\n\n[directories]\nsources=src\ninclude=include\nbuild=build\n\n["
-         "dependencies]";
-
-  std::filesystem::path src_dir = "src";
-  std::filesystem::create_directory(src_dir);
-
-  std::filesystem::path include_dir = "include";
-  std::filesystem::create_directory(include_dir);
-
-  if (lang == "c") {
-    std::ofstream("src/main.c")
-        << "#include <stdio.h>\n\nint main() {\n\tprintf("
-           "\"Let's start :)\");\n\treturn 0;\n}";
-  } else if (lang == "cpp") {
-    std::ofstream("src/main.cpp")
-        << "#include <iostream>\n\nint main() {\n\tstd::cout << "
-           "\"Let's start :)\" << std::endl;\n\treturn 0;\n}";
-  }
+  std::string extra = "\nwarnings=all\noptimization=balanced\nc_cache=on";
+  async_init("test", extra);
 }
+
 } // namespace init

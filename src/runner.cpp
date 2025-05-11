@@ -3,13 +3,11 @@
 #include "../include/config.hpp"
 #include <cctype>
 #include <cstdlib>
+#include <filesystem>
 #include <git2.h>
 #include <iostream>
 #include <sstream>
 #include <string>
-
-#include <filesystem>
-#include <iostream>
 
 namespace runner {
 void run(const Config &config) {
@@ -29,17 +27,21 @@ void run(const Config &config) {
     cmd << "-I" << path << " ";
   }
 
+  if (!config.include_dir.empty()) {
+    cmd << "-I" << config.include_dir << " ";
+  }
+
   cmd << config.sources_dir << "/*." << config.language << " -o "
       << config.build_dir << "/" << config.project;
 
   if (config.build_type == "release") {
 
     cmd << " -O3 -DNDEBUG -flto -march=native -funroll-loops "
-           "-fomit-frame-pointer -fno-exceptions -fno-rtti -finline-functions "
-           "-fprefetch-loop-arrays -Wl,--gc-sections -s -fvisibility=hidden ";
+           " -finline-functions "
+           " -Wl,--gc-sections -s -fvisibility=hidden ";
   } else {
     cmd << " -g -O0";
-    std::cout << "[debug] Debug build: running additional checks\n";
+    std::cout << "\033[33m[debug] Debug build: running additional checks\033[0m\n";
 
     if (config.linting.enable_checks) {
       std::stringstream lint_cmd;
@@ -50,7 +52,7 @@ void run(const Config &config) {
       if (config.linting.treat_warnings_as_errors) {
         lint_cmd << " -warnings-as-errors=*";
       }
-      std::cout << "[lint] Running: " << lint_cmd.str() << "\n";
+      std::cout << "\033[35m[lint] Running: " << lint_cmd.str() << "\033[0m\n";
       std::system(lint_cmd.str().c_str());
     }
 
@@ -63,15 +65,15 @@ void run(const Config &config) {
       if (config.analysis.cppcheck_force)
         cppcheck_cmd << "--force ";
       cppcheck_cmd << config.sources_dir;
-      std::cout << "[analysis] Running: " << cppcheck_cmd.str() << "\n";
+      std::cout << "\033[35m[analysis] Running: " << cppcheck_cmd.str() << "\033[0m\n";
       std::system(cppcheck_cmd.str().c_str());
     }
   }
 
-  std::cout << "[build] Compiling with: " << cmd.str() << "\n";
+  std::cout << "\033[32m[build] Compiling with: " << cmd.str() << "\033[0m\n";
   int result = std::system(cmd.str().c_str());
   if (result != 0) {
-    std::cerr << "[error] Compilation failed with code " << result << "\n";
+    std::cerr << "\033[31m[error] Compilation failed with code " << result << "\033[0m\n";
     return;
   }
 
@@ -80,10 +82,10 @@ void run(const Config &config) {
   if (config.build_type != "release" && !config.profiling.tool.empty()) {
     std::stringstream prof_cmd;
     prof_cmd << config.profiling.tool << " " << exec_cmd;
-    std::cout << "[profiling] Running: " << prof_cmd.str() << "\n";
+    std::cout << "\033[35m[profiling] Running: " << prof_cmd.str() << "\033[0m\n";
     std::system(prof_cmd.str().c_str());
   } else {
-    std::cout << "[run] Executing: " << exec_cmd << "\n";
+    std::cout << "\033[32m[run] Executing: " << exec_cmd << "\033[0m\n";
     std::system(exec_cmd.c_str());
   }
 }

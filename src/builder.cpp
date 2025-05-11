@@ -1,10 +1,14 @@
 #include "../include/builder.hpp"
 #include <algorithm>
 #include <fstream>
+#include <future>
 #include <iostream>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <vector>
+
+std::mutex io_mutex;
 
 std::pair<std::string, std::string> split_url_and_ref(const std::string &url) {
   size_t at_pos = url.find('@');
@@ -38,25 +42,36 @@ std::string extract_name(const std::string &url) {
 
 bool clone_dependency(const std::string &full_url, const fs::path &target_dir) {
   if (fs::exists(target_dir)) {
-    std::cout << "[git] Dependency already exists: " << target_dir << "\n";
+    std::lock_guard<std::mutex> lock(io_mutex);
+    std::cout << "\033[36m[git] Dependency already exists: " << target_dir
+              << "\033[0m\n";
     return true;
   }
 
   auto [url, ref] = split_url_and_ref(full_url);
-  std::cout << "[git] Cloning " << url << " into " << target_dir << "\n";
+  {
+    std::lock_guard<std::mutex> lock(io_mutex);
+    std::cout << "\033[36m[git] Cloning " << url << " into " << target_dir
+              << "\033[0m\n";
+  }
 
   std::string clone_cmd = "git clone " + url + " " + target_dir.string();
   if (std::system(clone_cmd.c_str()) != 0) {
-    std::cerr << "[error] Failed to clone " << url << "\n";
+    std::lock_guard<std::mutex> lock(io_mutex);
+    std::cerr << "\033[31m[error] Failed to clone " << url << "\n";
     return false;
   }
 
   if (!ref.empty()) {
-    std::cout << "[git] Checking out " << ref << "\n";
+    {
+      std::lock_guard<std::mutex> lock(io_mutex);
+      std::cout << "\033[36m[git] Checking out " << ref << "\033[0m\n";
+    }
     std::string checkout_cmd =
         "cd " + target_dir.string() + " && git checkout " + ref;
     if (std::system(checkout_cmd.c_str()) != 0) {
-      std::cerr << "[error] Failed to checkout " << ref << "\n";
+      std::lock_guard<std::mutex> lock(io_mutex);
+      std::cerr << "\033[31m[error] Failed to checkout " << ref << "\033[0m\n";
       return false;
     }
   }
@@ -115,49 +130,71 @@ bool detect_and_build(const fs::path &repo_path) {
     return build_with_make(repo_path);
   }
 
-  std::cout << "[info] No build system detected, skipping build\n";
+  {
+    std::lock_guard<std::mutex> lock(io_mutex);
+    std::cout
+        << "\033[32m[info] No build system detected, skipping build\033[0m\n";
+  }
   return false;
 }
 
 void process_dependencies(const std::vector<std::string> &deps) {
   fs::path deps_dir = "dependencies";
+  std::vector<std::future<void>> futures;
 
   for (const auto &dep : deps) {
-    std::string name = extract_name(dep);
-    fs::path lib_path = deps_dir / name;
+    futures.push_back(std::async(std::launch::async, [&, dep] {
+      std::string name = extract_name(dep);
+      fs::path lib_path = deps_dir / name;
 
-    if (!fs::exists(lib_path)) {
-      if (!clone_dependency(dep, lib_path)) {
-        continue;
+      if (!fs::exists(lib_path)) {
+        if (!clone_dependency(dep, lib_path)) {
+          return;
+        }
       }
-    }
 
-    if (!detect_and_build(lib_path)) {
-      std::cerr << "[error] Failed to build " << name << "\n";
-    }
+      if (!detect_and_build(lib_path)) {
+        std::lock_guard<std::mutex> lock(io_mutex);
+        std::cerr << "\033[31m[error] Failed to build " << name << "\033[0m\n";
+      }
+    }));
+  }
+
+  for (auto &fut : futures) {
+    fut.get();
   }
 }
 
 std::vector<fs::path> find_include_dirs(const fs::path &dependencies_path) {
   std::vector<fs::path> include_paths;
+  std::mutex include_mutex;
 
   if (!fs::exists(dependencies_path) || !fs::is_directory(dependencies_path)) {
-    std::cerr << "Invalid dependencies path: " << dependencies_path << '\n';
+    std::lock_guard<std::mutex> lock(io_mutex);
+    std::cerr << "\033[31mInvalid dependencies path: " << dependencies_path
+              << "\033[0m\n";
     return include_paths;
   }
 
+  std::vector<std::future<void>> futures;
   for (const auto &lib_dir : fs::directory_iterator(dependencies_path)) {
     if (!fs::is_directory(lib_dir))
       continue;
 
-    for (const auto &entry : fs::recursive_directory_iterator(lib_dir)) {
-      if (entry.is_directory() && entry.path().filename() == "include") {
-        include_paths.push_back(entry.path());
-        break;
-      }
-    }
+    futures.push_back(std::async(
+        std::launch::async, [&include_paths, &include_mutex, lib_dir] {
+          for (const auto &entry : fs::recursive_directory_iterator(lib_dir)) {
+            if (entry.is_directory() && entry.path().filename() == "include") {
+              std::lock_guard<std::mutex> lock(include_mutex);
+              include_paths.push_back(entry.path());
+              break;
+            }
+          }
+        }));
   }
 
+  for (auto &fut : futures)
+    fut.get();
   return include_paths;
 }
 
@@ -165,7 +202,9 @@ void add_dependencies(const std::vector<std::string> &deps,
                       const std::string &config_file) {
   std::ifstream file(config_file);
   if (!file.is_open()) {
-    std::cerr << "[error] Cannot open config file: " << config_file << "\n";
+    std::lock_guard<std::mutex> lock(io_mutex);
+    std::cerr << "\033[31m[error] Cannot open config file: " << config_file
+              << "\033[0m\n";
     return;
   }
 
@@ -190,36 +229,45 @@ void add_dependencies(const std::vector<std::string> &deps,
 
   std::ofstream out_file(config_file);
   if (!out_file.is_open()) {
-    std::cerr << "[error] Cannot open config file for writing: " << config_file
-              << "\n";
+    std::lock_guard<std::mutex> lock(io_mutex);
+    std::cerr << "\033[31m[error] Cannot open config file for writing: "
+              << config_file << "\033[0m\n";
     return;
   }
   out_file << content;
-  std::cout << "[info] Dependencies added successfully.\n";
+  std::lock_guard<std::mutex> lock(io_mutex);
+  std::cout << "\033[32m[info] Dependencies added successfully.\033[0m\n";
 }
 
 void clean_dependencies(const fs::path &deps_dir) {
   if (fs::exists(deps_dir)) {
-    std::cout << "[clean] Removing dependencies directory: " << deps_dir
-              << "\n";
+    std::lock_guard<std::mutex> lock(io_mutex);
+    std::cout << "\033[32m[clean] Removing dependencies directory: " << deps_dir
+              << "\033[0m\n";
     fs::remove_all(deps_dir);
   }
 }
 
 void clean_build_directory(const fs::path &build_dir) {
   if (fs::exists(build_dir)) {
-    std::cout << "[clean] Removing build directory: " << build_dir << "\n";
+    std::lock_guard<std::mutex> lock(io_mutex);
+    std::cout << "\033[32m[clean] Removing build directory: " << build_dir
+              << "\033[0m\n";
     fs::remove_all(build_dir);
   }
 }
 
 void clean_project(const std::string &build_dir,
                    const std::string &dependencies_dir) {
-  fs::path build_path(build_dir);
-  fs::path deps_path(dependencies_dir);
+  std::vector<std::future<void>> tasks;
+  tasks.push_back(std::async(std::launch::async,
+                             [&] { clean_build_directory(build_dir); }));
+  tasks.push_back(std::async(std::launch::async,
+                             [&] { clean_dependencies(dependencies_dir); }));
 
-  clean_build_directory(build_path);
-  clean_dependencies(deps_path);
+  for (auto &task : tasks)
+    task.get();
 
-  std::cout << "[clean] Project cleaned successfully\n";
+  std::lock_guard<std::mutex> lock(io_mutex);
+  std::cout << "\033[32m[clean] Project cleaned successfully\033[0m\n";
 }
