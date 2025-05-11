@@ -1,3 +1,4 @@
+#include "../include/builder.hpp"
 #include "../include/init.hpp"
 #include "../include/parser.hpp"
 #include "../include/runner.hpp"
@@ -24,8 +25,20 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  if (cmd == "add" && argc > 2) {
+    std::vector<std::string> git_urls;
+    for (int i = 2; i < argc; ++i) {
+      git_urls.push_back(argv[i]);
+    }
+    add_dependencies(git_urls, "config.zyn");
+  }
+
   if (cmd == "run") {
     runner::run(config);
+  }
+
+  if (cmd == "clean") {
+    clean_project("build", "dependencies");
   }
 
   return 0;

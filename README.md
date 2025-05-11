@@ -1,116 +1,131 @@
-# Zyn
+# ⚡ Zyn — Cross-platform Build System for C/C++
 
-### Introduction
+Zyn is a cross-platform build system for C and C++ projects, designed for simplicity, high performance, and powerful tooling. It manages compilation, dependency handling, linting, static analysis, and profiling in a unified way.
 
-Zyn is a cross-platform build system for C/C++ projects.
+Maintained by **Zyntraxis Corp**, founded by **Armen Baghdasaryan**.
 
-CMake is supported and maintained by **Zyntraxis Corp**, a company founded by Armen Baghdasaryan.
+---
 
-### License
+## 🛡 License
 
-Zyn is distributed under the Zyntraxis License. See LICENSE for details.
+Zyn is distributed under the **Zyntraxis License**. See `LICENSE` for full terms.
 
-### Installing Zyn
+---
 
-#### Supported Platforms
+## 📦 Installing Zyn
 
-- **Linux**
+### Supported Platforms
+- ✅ **Linux** (Ubuntu/Debian-based systems)
 
-Zyn is currently distributed for Linux systems as a `.deb` package.
-
-#### Installation via `.deb` package (Ubuntu/Debian-based systems)
-
-1. Download the latest `.deb` release from the [Zyn GitHub Releases page](https://github.com/zyntraxis-corp/zyn/releases/tag/v1.0.0):
+### Install via `.deb` package
 
 ```bash
-wget https://github.com/zyntraxis-corp/zyn/releases/download/v1.0.0/zyn_1.0.0_amd64.deb
+wget https://github.com/zyntraxis-corp/zyn/releases/download/v1.0.2/zyn_1.0.2_amd64.deb
+sudo dpkg -i zyn_1.0.2_amd64.deb
+sudo apt-get install -f  # Fix missing dependencies if needed
 ```
 
-2. Install the package using dpkg:
-```bash
-sudo dpkg -i zyn_1.0.0_amd64.deb
-```
+---
 
-3. If any dependencies are missing, fix them with:
-```bash
-sudo apt-get install -f
-```
+## 🚀 Quick Start
 
-### Usage
-
-#### Initialize a Project
-Zyn provides an ```init``` command to create a new project. You can choose from three configurations: ```debug``` and ```release```. To create in test mode you just need to write ```zyn init```. Here's how to use the init command:
+### Initialize a Project
 
 ```bash
-zyn init [debug|release]
+zyn init [debug|release|test]
 ```
-- debug: Initializes a project for debugging, with the necessary compiler flags for debugging (-g, -O0).
 
-- release: Initializes a project for release with optimization flags (-O3 and -DNDEBUG).
+- `debug`: Enables debugging flags (`-g -O0`) and tools like linting and analysis.
+- `release`: Enables aggressive optimizations for performance (`-O3`, `-flto`, `-march=native`, etc.).
+- `test`: Similar to debug but tuned for test environments.
 
-- test: Initializes a project for testing with debugging and warning flags enabled.
+> A `config.zyn` file will be generated along with a basic `src/main.cpp` or `src/main.c`.
 
-Example:
+---
 
-```bash
-zyn init debug
-```
-This will create a ```config.zyn``` file with the specified settings and generate a basic ```src/main.c``` or ```src/main.cpp``` depending on the chosen language.
-
-#### Run a Project
-Once your project is configured, you can build and run it using the ```run``` command:
+### Build and Run
 
 ```bash
 zyn run
 ```
-This will:
-- Compile the project using the configured compiler and settings.
-- Run the compiled executable.
 
-#### Build System Integration
-Zyn can automatically detect the build system of the cloned repository and use it to build the project. The supported build systems are:
+- Compiles the source using your configuration.
+- Automatically handles dependencies.
+- Runs the resulting binary.
+- If enabled, runs profilers like `valgrind` (debug only).
 
-- **CMake**: If ```CMakeLists.txt``` is present.
+---
 
-- **Make**: If ```Makefile``` or ```makefile``` is present.
+## 🆕 What’s New in 1.0.2
 
-- **Autotools**: If ```configure``` script is present.
+### ✅ `zyn add` — Add Dependencies via Git
 
-- **Ninja**: If ``` build.ninja``` is present.
+You can now add dependencies using a single command:
 
-Zyn automatically detects which build system is used and invokes the corresponding build tool.
-
-#### Dependencies
-Dependencies are managed via Git. You can specify a list of dependencies in the ```config.zyn``` file under the ```[dependencies]``` section. Zyn will automatically clone the repositories and attempt to build them using the appropriate build system.
-
-Example ```config.zyn``` file:
-```ini
-[config]
-version=1.0.0
-project=my_project
-language=cpp
-standard=c++17
-build_type=release
-compiler=g++
-
-[dependencies]
-https://github.com/some/dependency.git
+```bash
+zyn add https://github.com/gabime/spdlog
 ```
 
-When running ```zyn run```, Zyn will ensure the dependencies are cloned and built before building your project.
+Zyn will fetch the dependency and use it during the build.
 
-#### Configuration File (```config.zyn```)
-The ```config.zyn``` file is essential for defining your project’s settings. It includes sections like ```[config]```, ```[directories]```, ```[dependencies]```, and more.
+---
 
-Example ```config.zyn```:
+### 🏷 Version-Specific Dependencies
+
+Append `@version` to pin a specific version:
+
+```bash
+zyn add https://github.com/gabime/spdlog@v1.12.0
+```
+
+---
+
+### 🧼 `zyn clean` — Clean the Project
+
+Clean all build files and dependencies with:
+
+```bash
+zyn clean
+```
+
+---
+
+### ⚡ Maximum Release Optimization
+
+In `release` mode, Zyn now adds advanced optimization flags:
+
+```bash
+-O3 -DNDEBUG -flto -march=native -funroll-loops -fomit-frame-pointer -fno-exceptions -fno-rtti -finline-functions -fprefetch-loop-arrays -Wl,--gc-sections -s -fvisibility=hidden
+```
+
+Perfect for production builds.
+
+---
+
+### 🐞 Enhanced Debug Experience
+
+In `debug` mode:
+
+- Debug symbols (`-g -O0`)
+- Runs **clang-tidy** automatically if configured
+- Runs **cppcheck** with full analysis:
+  ```bash
+  --enable=all --inconclusive --force
+  ```
+- Full logging of executed commands for transparency
+
+---
+
+## ⚙️ config.zyn Structure
+
 ```ini
 [config]
-version=1.0.0
+version=1.0.2
 project=my_project
 language=cpp
 standard=c++17
 build_type=debug
-compiler=g++
+compiler=clang++
 warnings=all
 optimization=none
 c_cache=on
@@ -121,7 +136,7 @@ include=include
 build=build
 
 [dependencies]
-https://github.com/some/dependency.git
+https://github.com/gabime/spdlog@v1.12.0
 
 [linting]
 linter=clang-tidy
@@ -139,49 +154,36 @@ cppcheck_force=true
 tool=valgrind
 ```
 
-#### Build Commands
-Zyn supports the following build commands for dependencies:
+---
 
-- **CMake**: Automatically runs ```cmake``` commands to configure and build the project.
+## 🔧 Dependency Build System Support
 
-- **Make**: Uses ```make``` to build the project.
+Zyn automatically detects and uses the following systems from dependencies:
 
-- **Autotools:** Runs ```./configure```,``` make```, and ```make install```.
+- **CMake** — CMakeLists.txt
+- **Make** — Makefile/makefile
+- **Autotools** — `configure` script
+- **Ninja** — `build.ninja`
 
-- **Ninja:** Runs ```ninja``` if a ```build.ninja``` file is present.
+---
 
-#### Find Include Directories
-Zyn can automatically find the ```include``` directories in your dependencies. This is useful for passing the correct include paths to the compiler during the build process.
+## 📂 Include Directory Detection
 
-Example:
+Zyn scans dependency folders to find include paths and adds them during compilation:
 
 ```cpp
 std::vector<fs::path> includes = find_include_dirs("dependencies");
 ```
 
-This will find and return all include directories within the dependencies.
+---
 
-#### Configuration Options
-The ```config.zyn``` file allows you to configure various aspects of your build process, including:
+## 📋 Known Issues
 
-- **Compiler settings:** Specify the compiler, warnings, optimization level, and cache.
+- Dependency fetching fails if URL is invalid or private.
+- Currently tested only on Linux. Other OS support is experimental.
 
-- **Directories:** Set paths for ```sources```, ```include```, and ```build``` directories.
+---
 
-- **Linting:** Configure the linter (```clang-tidy```) and enable or disable specific checks.
+## 🤝 Contributing
 
-- **Static analysis**: Enable tools like ```cppcheck``` for static analysis.
-
-- **Profiling**: Set up profiling tools like ```valgrind``` for performance analysis.
-
-#### Known Issues
-- Dependency cloning may fail if the repository URL is incorrect or unreachable.
-
-- Currently only tested on Linux, other platforms may require adjustments or additional dependencies.
-
-#### License
-Zyn is distributed under the Zyntraxis License. See LICENSE for details.
-
-#### Contributing
-
-Contributions are welcome! Please feel free to open issues or submit pull requests on GitHub.
+Pull requests and issues are welcome on [GitHub](https://github.com/zyntraxis-corp/zyn)!

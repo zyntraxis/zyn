@@ -1,9 +1,22 @@
 #include "../include/builder.hpp"
 #include <algorithm>
+#include <fstream>
 #include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+std::pair<std::string, std::string> split_url_and_ref(const std::string &url) {
+  size_t at_pos = url.find('@');
+  if (at_pos == std::string::npos) {
+    return {url, ""};
+  }
+  return {url.substr(0, at_pos), url.substr(at_pos + 1)};
+}
 
 std::string extract_name(const std::string &url) {
-  std::string name = url;
+  auto [clean_url, ref] = split_url_and_ref(url);
+  std::string name = clean_url;
 
   if (name.size() > 4 && name.substr(name.size() - 4) == ".git") {
     name = name.substr(0, name.size() - 4);
@@ -23,22 +36,29 @@ std::string extract_name(const std::string &url) {
   return name.empty() ? "unknown" : name;
 }
 
-bool clone_dependency(const std::string &url, const fs::path &target_dir) {
+bool clone_dependency(const std::string &full_url, const fs::path &target_dir) {
   if (fs::exists(target_dir)) {
     std::cout << "[git] Dependency already exists: " << target_dir << "\n";
     return true;
   }
 
+  auto [url, ref] = split_url_and_ref(full_url);
   std::cout << "[git] Cloning " << url << " into " << target_dir << "\n";
-  git_libgit2_init();
 
-  git_repository *repo = nullptr;
-  int error = git_clone(&repo, url.c_str(), target_dir.c_str(), nullptr);
-  git_libgit2_shutdown();
-
-  if (error != 0) {
+  std::string clone_cmd = "git clone " + url + " " + target_dir.string();
+  if (std::system(clone_cmd.c_str()) != 0) {
     std::cerr << "[error] Failed to clone " << url << "\n";
     return false;
+  }
+
+  if (!ref.empty()) {
+    std::cout << "[git] Checking out " << ref << "\n";
+    std::string checkout_cmd =
+        "cd " + target_dir.string() + " && git checkout " + ref;
+    if (std::system(checkout_cmd.c_str()) != 0) {
+      std::cerr << "[error] Failed to checkout " << ref << "\n";
+      return false;
+    }
   }
 
   return true;
@@ -139,4 +159,67 @@ std::vector<fs::path> find_include_dirs(const fs::path &dependencies_path) {
   }
 
   return include_paths;
+}
+
+void add_dependencies(const std::vector<std::string> &deps,
+                      const std::string &config_file) {
+  std::ifstream file(config_file);
+  if (!file.is_open()) {
+    std::cerr << "[error] Cannot open config file: " << config_file << "\n";
+    return;
+  }
+
+  std::stringstream buffer;
+  buffer << file.rdbuf();
+  std::string content = buffer.str();
+
+  std::string dependencies_marker = "[dependencies]";
+  size_t dep_pos = content.find(dependencies_marker);
+
+  if (dep_pos == std::string::npos) {
+    content += "\n" + dependencies_marker + "\n";
+    dep_pos = content.size();
+  } else {
+    dep_pos += dependencies_marker.size();
+  }
+
+  for (const std::string &dep : deps) {
+    content.insert(dep_pos, "\n" + dep);
+    dep_pos += dep.size() + 1;
+  }
+
+  std::ofstream out_file(config_file);
+  if (!out_file.is_open()) {
+    std::cerr << "[error] Cannot open config file for writing: " << config_file
+              << "\n";
+    return;
+  }
+  out_file << content;
+  std::cout << "[info] Dependencies added successfully.\n";
+}
+
+void clean_dependencies(const fs::path &deps_dir) {
+  if (fs::exists(deps_dir)) {
+    std::cout << "[clean] Removing dependencies directory: " << deps_dir
+              << "\n";
+    fs::remove_all(deps_dir);
+  }
+}
+
+void clean_build_directory(const fs::path &build_dir) {
+  if (fs::exists(build_dir)) {
+    std::cout << "[clean] Removing build directory: " << build_dir << "\n";
+    fs::remove_all(build_dir);
+  }
+}
+
+void clean_project(const std::string &build_dir,
+                   const std::string &dependencies_dir) {
+  fs::path build_path(build_dir);
+  fs::path deps_path(dependencies_dir);
+
+  clean_build_directory(build_path);
+  clean_dependencies(deps_path);
+
+  std::cout << "[clean] Project cleaned successfully\n";
 }

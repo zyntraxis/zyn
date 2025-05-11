@@ -1,0 +1,17 @@
+[config]
+version=1.0.2
+project=zyn
+language=cpp
+standard=17
+build_type=release
+compiler=clang++
+warnings=none
+optimization=max
+c_cache=on
+
+[directories]
+sources=src
+include=include
+build=build
+
+[dependencies]
