@@ -141,7 +141,7 @@ Zyn automatically:
 - Prefer tagged releases over branches
 - Run `zyn update` periodically
 
-  ### 🔍 Zyn vs Traditional Build Tools (pluses and minuses)
+### 🔍 Zyn vs Traditional Build Tools (pluses and minuses)
 
 | Feature                        | ✅ Zyn                                                      | ⚙️ Traditional Tools (CMake, Conan, etc.)                 |
 | ------------------------------ | ---------------------------------------------------------- | -------------------------------------------------------- |
