@@ -1,7 +1,0 @@
-Package: zyn
-Version: 2.0.0
-Section: base
-Priority: optional
-Architecture: amd64
-Maintainer: Zyntraxis <zyntraxis@gmail.com>
-Description: Zyn C++ build tool
