@@ -1,49 +1,69 @@
-#include "../include/builder.hpp"
-#include "../include/init.hpp"
-#include "../include/parser.hpp"
-#include "../include/runner.hpp"
-#include <future>
+#include "../include/dependency_manager/git_dependency.hpp"
+#include "../include/dependency_manager/local_dependency.hpp"
+#include "../include/project_management/clean_project.hpp"
+#include "../include/project_management/compile_cmd_generator.hpp"
+#include "../include/project_management/project_creator.hpp"
+#include "../include/project_management/runner.hpp"
+#include <filesystem>
 #include <iostream>
+#include <sstream>
 #include <string>
-#include <vector>
+
+namespace fs = std::filesystem;
 
 int main(int argc, char *argv[]) {
-  auto config_future = std::async(
-      std::launch::async, [] { return parser::parse_config("config.zyn"); });
-
-  if (argc < 2)
+  if (argc < 2) {
+    std::cerr << "Usage: " << argv[0] << " <command> [arguments]\n";
     return 1;
+  }
 
-  std::string cmd = argv[1];
+  std::string command = argv[1];
 
-  if (cmd == "init") {
-    std::future<void> init_task;
-    if (argc == 2 || std::string(argv[2]).empty()) {
-      init_task = std::async(std::launch::async, init::init_test);
-    } else if (std::string(argv[2]) == "debug") {
-      init_task = std::async(std::launch::async, init::init_debug);
-    } else if (std::string(argv[2]) == "release") {
-      init_task = std::async(std::launch::async, init::init_release);
+  try {
+    if (command == "new") {
+      if (argc < 3) {
+        std::cerr << "Usage: " << argv[0] << " new <folder>\n";
+        return 1;
+      }
+      auto config = project_management::prompt_user_input(argv[2]);
+      project_management::create(config);
+      std::cout << "Project \"" << config.name << "\" created.\n";
+
+    } else if (command == "install") {
+      if (argc == 3) {
+        dependency_manager::install_from_url(argv[2]);
+      } else {
+        dependency_manager::install_all_from_config();
+      }
+
+    } else if (command == "add") {
+      if (argc < 3) {
+        std::cerr << "Usage: " << argv[0] << " add <local_lib_path>\n";
+        return 1;
+      }
+      dependency_manager::add_local_dependency(argv[2]);
+
+    } else if (command == "run") {
+      std::stringstream cmd = project_management::generate_compile_cmd();
+
+      if (argc == 3) {
+        project_management::run(cmd, argv[2]);
+      } else {
+        project_management::run(cmd, "--test");
+      }
+
+    } else if (command == "clean") {
+      fs::path zyn_folder = fs::current_path() / ".zyn";
+      project_management::clean_project(zyn_folder);
+
+    } else if (command == "update") {
+      dependency_manager::update_all_dependencies();
     } else {
-      std::cerr << "\033[31mUnknown init option: " << argv[2] << "\033[0m\n";
+      std::cerr << "Unknown command: " << command << "\n";
       return 1;
     }
-    init_task.get();
-  } else if (cmd == "add" && argc > 2) {
-    std::vector<std::string> git_urls(argv + 2, argv + argc);
-    auto add_task = std::async(std::launch::async, add_dependencies, git_urls,
-                               "config.zyn");
-    add_task.get();
-  } else if (cmd == "run") {
-    Config config = config_future.get();
-    auto run_task = std::async(std::launch::async, runner::run, config);
-    run_task.get();
-  } else if (cmd == "clean") {
-    auto clean_task =
-        std::async(std::launch::async, clean_project, "build", "dependencies");
-    clean_task.get();
-  } else {
-    std::cerr << "\033[31mUnknown command: " << cmd << "\033[0m\n";
+  } catch (const std::exception &e) {
+    std::cerr << "[Zyn] Error: " << e.what() << "\n";
     return 1;
   }
 

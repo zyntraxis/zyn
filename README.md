@@ -19,171 +19,124 @@ Zyn is distributed under the **Zyntraxis License**. See `LICENSE` for full terms
 
 ### Install via `.deb` package
 
+Download .deb package
 ```bash
-wget https://github.com/zyntraxis-corp/zyn/releases/download/v1.0.2/zyn_1.0.2_amd64.deb
-sudo dpkg -i zyn_1.0.2_amd64.deb
-sudo apt-get install -f  # Fix missing dependencies if needed
+url: https://github.com/zyntraxis/zyn/releases/tag/v2.0.0
+
+sudo dpkg -i zyn_2.0.0.deb
 ```
 
 ---
 
-## 🚀 Quick Start
+## Features
 
-### Initialize a Project
+- 🚀 Project scaffolding for C/C++
+- 📦 Git and local dependency management
+- 🔄 Automatic dependency resolution
+- 🔒 Version locking with hash verification
+- ⚡ Parallel dependency installation
+- 🛠️ Multiple build configurations (debug/release)
 
+---
+
+# 🚀 Quick Start
+
+## Create a new project:
 ```bash
-zyn init [debug|release|test]
+zyn new my_project
 ```
 
-- `debug`: Enables debugging flags (`-g -O0`) and tools like linting and analysis.
-- `release`: Enables aggressive optimizations for performance (`-O3`, `-flto`, `-march=native`, etc.).
-- `test`: Similar to debug but tuned for test environments.
-
-> A `config.zyn` file will be generated along with a basic `src/main.cpp` or `src/main.c`.
-
----
-
-### Build and Run
-
+## Navigate to project:
 ```bash
-zyn run
+cd my_project
 ```
 
-- Compiles the source using your configuration.
-- Automatically handles dependencies.
-- Runs the resulting binary.
-- If enabled, runs profilers like `valgrind` (debug only).
-
----
-
-## 🆕 What’s New in 1.0.2
-
-### ✅ `zyn add` — Add Dependencies via Git
-
-You can now add dependencies using a single command:
-
+## Add dependencies:
 ```bash
-zyn add https://github.com/gabime/spdlog
+zyn install https://github.com/fmtlib/fmt.git@9.1.0
 ```
 
-Zyn will fetch the dependency and use it during the build.
-
----
-
-### 🏷 Version-Specific Dependencies
-
-Append `@version` to pin a specific version:
-
+## Build and run:
 ```bash
-zyn add https://github.com/gabime/spdlog@v1.12.0
+zyn run --release
 ```
 
----
+# Commands
 
-### 🧼 `zyn clean` — Clean the Project
+| Command                   | Description            |
+| ------------------------- | ---------------------- |
+| `new <name>`              | Create new project     |
+| `install [url]/[url]@tag`           | Install dependencies   |
+| `add <path>`              | Add local dependency   |
+| `run [--debug --release]` | Build and execute      |
+| `update`                  | Update dependencies    |
+| `clean`                   | Remove build artifacts |
 
-Clean all build files and dependencies with:
+# Project Structure
 
-```bash
-zyn clean
+Generated project layout:
+```
+project/
+├── .zyn/
+│   ├── deps/      # Downloaded dependencies
+│   ├── build/     # Dependency build outputs
+│   └── lock/      # Version lock files
+├── src/           # Source files
+├── include/       # Headers
+└── zyn.toml       # Project configuration
 ```
 
----
+# Configuration (zyn.toml)
 
-### ⚡ Maximum Release Optimization
-
-In `release` mode, Zyn now adds advanced optimization flags:
-
-```bash
--O3 -DNDEBUG -flto -march=native -funroll-loops -fomit-frame-pointer -fno-exceptions -fno-rtti -finline-functions -fprefetch-loop-arrays -Wl,--gc-sections -s -fvisibility=hidden
-```
-
-Perfect for production builds.
-
----
-
-### 🐞 Enhanced Debug Experience
-
-In `debug` mode:
-
-- Debug symbols (`-g -O0`)
-- Runs **clang-tidy** automatically if configured
-- Runs **cppcheck** with full analysis:
-  ```bash
-  --enable=all --inconclusive --force
-  ```
-- Full logging of executed commands for transparency
-
----
-
-## ⚙️ config.zyn Structure
-
-```ini
-[config]
-version=1.0.2
-project=my_project
-language=cpp
-standard=c++17
-build_type=debug
-compiler=clang++
-warnings=all
-optimization=none
-c_cache=on
+Example configuration:
+```toml
+[project]
+name = "my_app"
+version = "1.0.0"
+language = "cpp"
+standard = "c++20"
+compiler = "clang++"
 
 [directories]
-sources=src
-include=include
-build=build
+sources = "src"
+include = "include"
+build = ".zyn/build"
 
 [dependencies]
-https://github.com/gabime/spdlog@v1.12.0
+fmt = { git = "https://github.com/fmtlib/fmt.git", tag = "9.1.0" }
+boost = { path = "/opt/boost" }
 
-[linting]
-linter=clang-tidy
-config_file=.clang-tidy
-enable_checks=all
-treat_warnings_as_errors=true
-
-[analysis]
-static_analyzer=cppcheck
-cppcheck_enable=all
-cppcheck_inconclusive=true
-cppcheck_force=true
-
-[profiling]
-tool=valgrind
+[libraries]
+lib_dirs = ["/usr/local/lib/build"]
+libraries = ["pthread", "dl"]
 ```
 
----
+# Dependency Management
 
-## 🔧 Dependency Build System Support
-
-Zyn automatically detects and uses the following systems from dependencies:
-
-- **CMake** — CMakeLists.txt
-- **Make** — Makefile/makefile
-- **Autotools** — `configure` script
-- **Ninja** — `build.ninja`
-
----
-
-## 📂 Include Directory Detection
-
-Zyn scans dependency folders to find include paths and adds them during compilation:
-
-```cpp
-std::vector<fs::path> includes = find_include_dirs("dependencies");
+## Git Dependencies
+```toml
+[dependencies]
+library = { git = "https://github.com/user/repo.git", tag = "v1.2.3" }
 ```
 
----
+## Local Dependencies
+```toml
+[dependencies]
+mylib = { path = "../local/path" }
+```
 
-## 📋 Known Issues
+# Build System
 
-- Dependency fetching fails if URL is invalid or private.
-- Currently tested only on Linux. Other OS support is experimental.
+Zyn automatically:
 
----
+- Detects header directories (`include/`, `Include/`)
+- Generates appropriate compiler flags
+- Supports CMake-based dependencies
+- Maintains version locks in `.zyn/lock/`
 
-## 🤝 Contributing
+# Best Practices
 
-Pull requests and issues are welcome on [GitHub](https://github.com/zyntraxis-corp/zyn)!
+- Commit `zyn.toml` and `.zyn/lock/` to version control
+- Use semantic versioning for tags
+- Prefer tagged releases over branches
+- Run `zyn update` periodically
