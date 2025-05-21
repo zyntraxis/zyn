@@ -140,3 +140,20 @@ Zyn automatically:
 - Use semantic versioning for tags
 - Prefer tagged releases over branches
 - Run `zyn update` periodicallyroduct on the homepage. Animated images will only play on hover.
+- Run `zyn update` periodically
+
+### 🔍 Zyn vs Traditional Build Tools (pluses and minuses)
+
+| Feature                        | ✅ Zyn                                                      | ⚙️ Traditional Tools (CMake, Conan, etc.)                 |
+| ------------------------------ | ---------------------------------------------------------- | -------------------------------------------------------- |
+| **Zero config to get started** | ✅ One-line setup (`zyn install ...`)                       | ❌ Requires multiple files/configs                        |
+| **Dependency fetching**        | ✅ Git-based, no registries needed                          | ⚠️ Requires remotes or package registries                 |
+| **Dependency building**        | ✅ Auto-detects & builds (CMake/Make)                       | ⚠️ Often manual, or scripted via toolchains               |
+| **Cross-platform by default**  | ✅ Yes                                                      | ⚠️ Requires setup (toolchains, flags, etc.)               |
+| **IDE integration**            | 🔜 Planned                                                  | ✅ Mature, supported by many tools                        |
+| **CI/CD ready**                | 🔜 Planned                                                  | ✅ Well-supported                                         |
+| **Fine-grained control**       | ❌ Minimalist by design                                     | ✅ Full control over every step                           |
+| **Custom toolchain support**   | ❌ Not yet                                                  | ✅ Fully supported                                        |
+| **Binary caching**             | ❌ Not yet                                                  | ✅ Via Conan/Nix/etc.                                     |
+| **Ease of use**                | ✅ Extremely simple                                         | ⚠️ Steep learning curve                                   |
+| **Best for**                   | 🛠️ Small/medium projects, internal tools, quick prototyping | 🏗️ Large-scale, multi-platform, production-grade projects |
