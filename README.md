@@ -97,6 +97,19 @@ language = "cpp"
 standard = "c++20"
 compiler = "clang++"
 
+[settings.profiles.--release]
+flags = [
+    "-w -O3 -ffast-math -finline-functions -funroll-loops -fomit-frame-pointer -march=native -flto -DNDEBUG -fstrict-aliasing -fmerge-all-constants",
+]
+[settings.profiles.--debug]
+flags = [
+    "-g -O0 -DDEBUG -fno-inline -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined",
+]
+[settings.profiles.custom_profile]
+flags = [
+    "-g -O1",
+]
+
 [directories]
 sources = "src"
 include = "include"
