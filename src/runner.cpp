@@ -12,9 +12,9 @@ int run_command(const std::string &cmd) {
     std::cerr << "Command failed with code " << ret << "\n";
   }
   return ret;
-} // namespace run_command(conststd::string
+}
 
-void run(std::stringstream &compile_cmd, const std::string &type) {
+void run(std::stringstream &compile_cmd, const std::string &profile) {
   namespace fs = std::filesystem;
   fs::create_directories(".zyn/build/");
 
@@ -23,14 +23,15 @@ void run(std::stringstream &compile_cmd, const std::string &type) {
 
   install_future.get();
 
-  if (type == "--release") {
-    compile_cmd << " -w -O3 -ffast-math -finline-functions -funroll-loops "
-                   "-fomit-frame-pointer -march=native -flto "
-                   "-DNDEBUG -fstrict-aliasing "
-                   "-fmerge-all-constants";
-  } else if (type == "--debug") {
-    compile_cmd << " -g -O0 -DDEBUG -fno-inline -fno-omit-frame-pointer "
-                   "-fsanitize=address -fsanitize=undefined";
+  Config cfg = parse("zyn.toml");
+
+  if (cfg.profiles.count(profile) > 0) {
+    for (const auto &flag : cfg.profiles.at(profile)) {
+      compile_cmd << " " << flag;
+    }
+  } else {
+    std::cerr << "Error: Profile '" << profile
+              << "' not found in zyn.toml. No compile flags applied.\n";
   }
 
   int compile_ret = run_command(compile_cmd.str());
@@ -39,12 +40,11 @@ void run(std::stringstream &compile_cmd, const std::string &type) {
     return;
   }
 
-  Config cfg = parse("zyn.toml");
-
   std::string run_cmd = "./.zyn/build/" + cfg.name;
   int run_ret = run_command(run_cmd);
   if (run_ret != 0) {
     std::cerr << "Run failed with code " << run_ret << "\n";
   }
 }
+
 } // namespace project_management

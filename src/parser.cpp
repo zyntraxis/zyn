@@ -55,6 +55,23 @@ Config parse(std::string config_file) {
     }
   }
 
+  if (auto settings_tbl = tbl["settings"].as_table()) {
+    if (auto profiles_tbl = (*settings_tbl)["profiles"].as_table()) {
+      for (auto &[profile_name, val] : *profiles_tbl) {
+        if (auto profile_table = val.as_table()) {
+          if (auto flags_array = (*profile_table)["flags"].as_array()) {
+            std::vector<std::string> flags_vec;
+            for (auto &flag : *flags_array) {
+              if (flag.is_string())
+                flags_vec.push_back(flag.value_or(""));
+            }
+            config.profiles[std::string(profile_name.str())] = flags_vec;
+          }
+        }
+      }
+    }
+  }
+
   return config;
 }
 

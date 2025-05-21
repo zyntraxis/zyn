@@ -30,6 +30,17 @@ void create(const ProjectConfig &config) {
   config_file << "standard = \"" << config.standard << "\"\n";
   config_file << "compiler = \"" << config.compiler << "\"\n\n";
 
+  config_file << "[settings.profiles.--release]\n";
+  config_file
+      << "flags = [\"-w -O3 -ffast-math -finline-functions -funroll-loops"
+         " -fomit-frame-pointer -march=native -flto -DNDEBUG "
+         "-fstrict-aliasing -fmerge-all-constants\"]\n";
+
+  config_file << "[settings.profiles.--debug]\n";
+  config_file
+      << "flags = [\"-g -O0 -DDEBUG -fno-inline -fno-omit-frame-pointer "
+         "-fsanitize=address -fsanitize=undefined\"]\n\n";
+
   config_file << "[directories]\n";
   config_file << "sources = \"src\"\n";
   config_file << "include = \"include\"\n";
