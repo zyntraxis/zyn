@@ -1,3 +1,4 @@
+#include <map>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -21,6 +22,7 @@ struct Config {
   std::unordered_map<std::string, Dependency> dependencies;
   std::vector<std::string> libraries;
   std::vector<std::string> lib_dirs;
+  std::map<std::string, std::vector<std::string>> profiles;
 };
 Config parse(std::string config_file);
 void save(const std::string &path, const Config &config);

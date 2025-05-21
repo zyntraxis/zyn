@@ -139,6 +139,7 @@ Zyn automatically:
 - Commit `zyn.toml` and `.zyn/lock/` to version control
 - Use semantic versioning for tags
 - Prefer tagged releases over branches
+- Run `zyn update` periodicallyroduct on the homepage. Animated images will only play on hover.
 - Run `zyn update` periodically
 
 ### 🔍 Zyn vs Traditional Build Tools (pluses and minuses)
