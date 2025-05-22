@@ -1,3 +1,4 @@
+#include "../include/project_management/assembly_cache.hpp"
 #include "../include/project_management/parser.hpp"
 #include <cstdlib>
 #include <filesystem>
@@ -25,19 +26,25 @@ void run(std::stringstream &compile_cmd, const std::string &profile) {
 
   Config cfg = parse("zyn.toml");
 
-  if (cfg.profiles.count(profile) > 0) {
-    for (const auto &flag : cfg.profiles.at(profile)) {
-      compile_cmd << " " << flag;
-    }
+  if (!needs_rebuild(cfg)) {
+    std::cout << "No changes detected. Using cached build.\n";
   } else {
-    std::cerr << "Error: Profile '" << profile
-              << "' not found in zyn.toml. No compile flags applied.\n";
-  }
+    if (cfg.profiles.count(profile) > 0) {
+      for (const auto &flag : cfg.profiles.at(profile)) {
+        compile_cmd << " " << flag;
+      }
+    } else {
+      std::cerr << "Error: Profile '" << profile
+                << "' not found in zyn.toml. No compile flags applied.\n";
+    }
 
-  int compile_ret = run_command(compile_cmd.str());
-  if (compile_ret != 0) {
-    std::cerr << "Compilation failed, aborting run.\n";
-    return;
+    int compile_ret = run_command(compile_cmd.str());
+    if (compile_ret != 0) {
+      std::cerr << "Compilation failed, aborting run.\n";
+      return;
+    }
+
+    update_cache(cfg);
   }
 
   std::string run_cmd = "./.zyn/build/" + cfg.name;
