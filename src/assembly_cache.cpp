@@ -40,7 +40,6 @@ std::string hash_source_files(const Config &config) {
   SHA256_CTX sha_context;
   SHA256_Init(&sha_context);
 
-  // Hash all source files
   for (const auto &entry : fs::recursive_directory_iterator(config.sources)) {
     if (entry.is_regular_file() &&
         entry.path().extension() == "." + config.language) {
@@ -49,7 +48,6 @@ std::string hash_source_files(const Config &config) {
     }
   }
 
-  // Hash all header files
   for (const auto &entry : fs::recursive_directory_iterator(config.include)) {
     if (entry.is_regular_file() && entry.path().extension() == ".h") {
       std::string file_hash = hash_file_contents(entry.path());
@@ -74,30 +72,24 @@ bool needs_rebuild(const Config &config) {
   fs::path hash_file = cache_dir / "source_hashes.txt";
   fs::path executable = ".zyn/build/" + config.name;
 
-  // If no executable exists, we definitely need to rebuild
   if (!fs::exists(executable)) {
     return true;
   }
 
-  // If no hash file exists, we need to rebuild
   if (!fs::exists(hash_file)) {
     return true;
   }
 
-  // Read the stored hash
   std::ifstream in(hash_file);
   std::string stored_hash;
   std::getline(in, stored_hash);
 
-  // Calculate current hash
   std::string current_hash = hash_source_files(config);
 
-  // If hashes differ, we need to rebuild
   if (stored_hash != current_hash) {
     return true;
   }
 
-  // Check if any dependency has been updated
   auto executable_time = fs::last_write_time(executable);
   for (const auto &[name, dep] : config.dependencies) {
     if (!dep.path.empty()) {
