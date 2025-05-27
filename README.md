@@ -137,6 +137,53 @@ library = { git = "https://github.com/user/repo.git", tag = "v1.2.3" }
 [dependencies]
 mylib = { path = "../local/path" }
 ```
+## IDE Integration
+Version 2.3.0 introduces powerful new functionality: automatic generation of project configurations for popular IDEs. This greatly improves development workflow and makes it seamless to integrate Zyn-based C++ projects into:
+- Visual Studio Code
+- CLion
+- QtCreator
+# 🔧 Command Syntax
+```zyn ide --vscode
+zyn ide --clion
+zyn ide --qtcreator
+```
+Each command creates the appropriate configuration files in a dedicated folder for your chosen IDE.
+## 📁 What’s Generated
+```zyn ide --vscode```
+Creates the ```.vscode/``` directory with:
+- ```c_cpp_properties.json``` — IntelliSense configuration and include paths
+- ```tasks.json``` — build tasks using ```zyn run --release```
+- ```launch.json``` — debugging configuration using GDB
+Fully integrates with Visual Studio Code out of the box.
+
+```zyn ide --clion```
+Creates ```.clion/CMakeLists.txt```
+This allows CLion to open and work with your Zyn project immediately.
+
+```zyn ide --qtcreator```
+Creates ```.qtcreator/ZynProject.pro```
+Supports smooth integration with QtCreator without manual setup.
+
+## 🧠 How It Works
+- Reads your zyn.toml for:
+ - Project name
+ - Language (c or cpp)
+ - Compiler path
+ - Language standard (c11, c++17, etc.)
+ - Include directories
+
+- Automatically populates all config files with accurate, project-specific data.
+
+## 💡 Example Usage
+``` zyn ide --vscode
+# Generates full VSCode config in .vscode/
+
+zyn ide --clion
+# Generates CMakeLists.txt in .clion/
+
+zyn ide --qtcreator
+# Generates Qt project file in .qtcreator/
+```
 
 # Build System
 
