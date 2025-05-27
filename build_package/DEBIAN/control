@@ -1,7 +1,0 @@
-Package: zyn
-Version: 2.3.0
-Section: base
-Priority: optional
-Architecture: all
-Maintainer: Zyntraxis zyntraxis@gmail.com
-Description: Zyn - fast C++ build system with git dependency management and IDE project generation.
