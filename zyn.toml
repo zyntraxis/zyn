@@ -1,18 +1,27 @@
-[dependencies]
-spdlog = { path = 'external/spdlog' }
+[project]
+compiler = 'clang++'
+language = 'cpp'
+name = 'zyn'
+standard = 'c++17'
+version = '2.3.0'
+
+[settings.profiles.--release]
+flags = [
+    "-w -O3 -ffast-math -finline-functions -funroll-loops -fomit-frame-pointer -march=native -flto -DNDEBUG -fstrict-aliasing -fmerge-all-constants",
+]
+[settings.profiles.--debug]
+flags = [
+    "-g -O0 -DDEBUG -fno-inline -fno-omit-frame-pointer -fsanitize=address -fsanitize=undefined",
+]
 
 [directories]
 build = 'build'
 include = 'include'
 sources = 'src'
 
+[dependencies]
+json = { git = "https://github.com/nlohmann/json.git", tag = "v3.11.3" }
+
 [libraries]
 lib_dirs = []
 libraries = ['crypto']
-
-[project]
-compiler = 'clang++'
-language = 'cpp'
-name = 'zyn'
-standard = 'c++17'
-version = '2.1.0'

@@ -2,6 +2,7 @@
 #include "../include/dependency_manager/local_dependency.hpp"
 #include "../include/project_management/clean_project.hpp"
 #include "../include/project_management/compile_cmd_generator.hpp"
+#include "../include/project_management/ide_generator.hpp"
 #include "../include/project_management/project_creator.hpp"
 #include "../include/project_management/runner.hpp"
 #include <filesystem>
@@ -58,6 +59,17 @@ int main(int argc, char *argv[]) {
 
     } else if (command == "update") {
       dependency_manager::update_all_dependencies();
+    } else if (command == "ide") {
+      if (std::string(argv[2]) == "--vscode") {
+        project_management::generate_vscode_files();
+        std::cout << "VSCode config generated in .vscode/\n";
+      } else if (std::string(argv[2]) == "--clion") {
+        project_management::generate_clion_config();
+        std::cout << "CLion config generated in .clion/\n";
+      } else if (std::string(argv[2]) == "--qtcreator") {
+        project_management::generate_qtcreator_config();
+        std::cout << "Qtcreator config generated in .qtcreator/\n";
+      }
     } else {
       std::cerr << "Unknown command: " << command << "\n";
       return 1;
