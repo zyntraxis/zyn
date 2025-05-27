@@ -175,7 +175,8 @@ Supports smooth integration with QtCreator without manual setup.
 - Automatically populates all config files with accurate, project-specific data.
 
 ## 💡 Example Usage
-``` zyn ide --vscode
+```
+zyn ide --vscode
 # Generates full VSCode config in .vscode/
 
 zyn ide --clion
