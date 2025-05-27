@@ -211,10 +211,9 @@ Zyn automatically:
 | **Dependency fetching**        | ✅ Git-based, no registries needed                          | ⚠️ Requires remotes or package registries                 |
 | **Dependency building**        | ✅ Auto-detects & builds (CMake/Make)                       | ⚠️ Often manual, or scripted via toolchains               |
 | **Cross-platform by default**  | ✅ Yes                                                      | ⚠️ Requires setup (toolchains, flags, etc.)               |
-| **IDE integration**            | 🔜 Planned                                                  | ✅ Mature, supported by many tools                        |
+| **IDE integration**            | ✅ Yes                                                | ✅ Mature, supported by many tools                        |
 | **CI/CD ready**                | 🔜 Planned                                                  | ✅ Well-supported                                         |
-| **Fine-grained control**       | ❌ Minimalist by design                                     | ✅ Full control over every step                           |
-| **Custom toolchain support**   | ❌ Not yet                                                  | ✅ Fully supported                                        |
-| **Binary caching**             | ❌ Not yet                                                  | ✅ Via Conan/Nix/etc.                                     |
+| **Fine-grained control**       | ✅ Minimalist by design                                     | ✅ Full control over every step                           |
+| **Custom toolchain support**   | 🔜 Planned                                                    | ✅ Fully supported                                        |
+| **Binary caching**             | ✅ Yes                                                      | ✅ Via Conan/Nix/etc.                                     |
 | **Ease of use**                | ✅ Extremely simple                                         | ⚠️ Steep learning curve                                   |
-| **Best for**                   | 🛠️ Small/medium projects, internal tools, quick prototyping | 🏗️ Large-scale, multi-platform, production-grade projects |
